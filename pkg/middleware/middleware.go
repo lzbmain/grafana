@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/grafana/grafana/pkg/bus"
@@ -231,11 +232,26 @@ func WriteSessionCookie(ctx *m.ReqContext, value string, maxLifetimeDays int) {
 }
 
 func AddDefaultResponseHeaders() macaron.Handler {
-	return func(ctx *m.ReqContext) {
-		if ctx.IsApiRequest() && ctx.Req.Method == "GET" {
-			ctx.Resp.Header().Add("Cache-Control", "no-cache")
-			ctx.Resp.Header().Add("Pragma", "no-cache")
-			ctx.Resp.Header().Add("Expires", "-1")
+	return func(ctx *macaron.Context) {
+		if ctx.Req.Method != http.MethodGet {
+			return
+		}
+
+		if m.IsApiRequest(ctx.Req.URL.Path) {
+			AddNoCacheHeaders(ctx.Resp)
+		} else {
+			ctx.Resp.Before(func(w macaron.ResponseWriter) {
+				contentType := ctx.Resp.Header().Get("Content-Type")
+				if strings.HasPrefix(contentType, "text/html;") {
+					AddNoCacheHeaders(w)
+				}
+			})
 		}
 	}
+}
+
+func AddNoCacheHeaders(w macaron.ResponseWriter) {
+	w.Header().Add("Cache-Control", "no-cache")
+	w.Header().Add("Pragma", "no-cache")
+	w.Header().Add("Expires", "-1")
 }

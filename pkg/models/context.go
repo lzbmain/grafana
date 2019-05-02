@@ -44,7 +44,11 @@ func (ctx *ReqContext) JsonOK(message string) {
 }
 
 func (ctx *ReqContext) IsApiRequest() bool {
-	return strings.HasPrefix(ctx.Req.URL.Path, "/api")
+	return IsApiRequest(ctx.Req.URL.Path)
+}
+
+func IsApiRequest(path string) bool {
+	return strings.HasPrefix(path, "/api")
 }
 
 func (ctx *ReqContext) JsonApiErr(status int, message string, err error) {
